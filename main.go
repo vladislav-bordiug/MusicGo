@@ -87,9 +87,22 @@ func Config() *pgxpool.Config {
 	return dbConfig
 }
 
+type Database interface {
+	InsertQuery(ctx context.Context, group_name string, song_name string, releaseDate string, text string, link string) error
+	CreateTableQuery(ctx context.Context) error
+	DeleteQuery(ctx context.Context, group_name string, song_name string) error
+	SelectDataQuery(ctx context.Context, page int64, items int64, group string, song string, releaseDate string, text string, link string) (AnswerData, error)
+	SelectCoupletQuery(ctx context.Context, group string, song string, couplet int64) (AnswerCoupletData, error)
+	EditQuery(ctx context.Context, group_name string, song_name string, releaseDate string, text string, link string) error
+}
+
+type HttpClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 type Handler struct {
-	Database *PGXDatabase
-	Client   HTTPClient
+	Database Database
+	Client   HttpClient
 }
 
 func main() {
