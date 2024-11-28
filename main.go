@@ -13,7 +13,6 @@ import (
 	"net/url"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -88,136 +87,10 @@ func Config() *pgxpool.Config {
 	return dbConfig
 }
 
-func CreateTableQuery(p *pgxpool.Pool) error {
-	_, err := p.Exec(context.Background(), "CREATE TABLE IF NOT EXISTS songs (group_name TEXT, song_name TEXT, releaseDate TEXT, text TEXT, link TEXT);")
-	if err != nil {
-		return err
-	}
-	return nil
+type Handler struct {
+	Database *PGXDatabase
+	Client   HTTPClient
 }
-
-func InsertQuery(p *pgxpool.Pool, group_name string, song_name string, releaseDate string, text string, link string) error {
-	_, err := p.Exec(context.Background(), "INSERT INTO songs(group_name, song_name, releaseDate, text, link) values($1, $2, $3, $4, $5)", group_name, song_name, releaseDate, text, link)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func DeleteQuery(p *pgxpool.Pool, group_name string, song_name string) error {
-	_, err := p.Exec(context.Background(), "DELETE FROM songs WHERE group_name = $1 AND song_name = $2", group_name, song_name)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func SelectDataQuery(p *pgxpool.Pool, page int64, items int64, group string, song string, releaseDate string, text string, link string) (AnswerData, error) {
-	query := "SELECT * FROM songs "
-	var answer AnswerData
-	paramindex := 1
-	setClauses := []string{}
-	params := []interface{}{}
-	if group != "" || song != "" || releaseDate != "" || text != "" || link != "" {
-		if group != "" {
-			setClauses = append(setClauses, fmt.Sprintf("group_name = $%d", paramindex))
-			params = append(params, group)
-			paramindex++
-		}
-		if song != "" {
-			setClauses = append(setClauses, fmt.Sprintf("song_name = $%d", paramindex))
-			params = append(params, song)
-			paramindex++
-		}
-		if releaseDate != "" {
-			setClauses = append(setClauses, fmt.Sprintf("releaseDate = $%d", paramindex))
-			params = append(params, releaseDate)
-			paramindex++
-		}
-		if text != "" {
-			setClauses = append(setClauses, fmt.Sprintf("text = $%d", paramindex))
-			params = append(params, text)
-			paramindex++
-		}
-		if link != "" {
-			setClauses = append(setClauses, fmt.Sprintf("link = $%d", paramindex))
-			params = append(params, link)
-			paramindex++
-		}
-	}
-	if len(setClauses) > 0 {
-		query += "WHERE " + strings.Join(setClauses, " AND ") + " "
-	}
-	query += fmt.Sprintf("LIMIT $%d OFFSET $%d", paramindex, paramindex+1)
-	params = append(params, items)
-	params = append(params, (page-1)*items)
-	log.Printf("INFO: query for the database=%s\n", query)
-	log.Printf("INFO: query params for the database=%s\n", params)
-	rows, err := p.Query(context.Background(), query, params...)
-	if err != nil {
-		return answer, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var result RowDbData
-		if err := rows.Scan(&result.Group, &result.Song, &result.Date, &result.Text, &result.Link); err != nil {
-			return answer, err
-		}
-		answer.Items = append(answer.Items, result)
-	}
-	return answer, nil
-}
-
-func SelectCoupletQuery(p *pgxpool.Pool, group string, song string, couplet int64) (AnswerCoupletData, error) {
-	var text string
-	var answer AnswerCoupletData
-	err := p.QueryRow(context.Background(), "SELECT text FROM songs WHERE group_name = $1 AND song_name = $2", group, song).Scan(&text)
-	if err != nil {
-		return answer, err
-	}
-	result := strings.Split(text, "\n\n")
-	if couplet > int64(len(result)) {
-		return answer, fmt.Errorf("There is no such couplet")
-	}
-	answer.Text = result[couplet-1]
-	return answer, nil
-}
-
-func EditQuery(p *pgxpool.Pool, group_name string, song_name string, releaseDate string, text string, link string) error {
-	query := "UPDATE songs SET "
-	paramindex := 3
-	setClauses := []string{}
-	params := []interface{}{group_name, song_name}
-	if releaseDate != "" {
-		setClauses = append(setClauses, fmt.Sprintf("releaseDate = $%d", paramindex))
-		params = append(params, releaseDate)
-		paramindex++
-	}
-	if text != "" {
-		setClauses = append(setClauses, fmt.Sprintf("text = $%d", paramindex))
-		params = append(params, text)
-		paramindex++
-	}
-	if link != "" {
-		setClauses = append(setClauses, fmt.Sprintf("link = $%d", paramindex))
-		params = append(params, link)
-		paramindex++
-	}
-	if len(setClauses) == 0 {
-		return nil
-	}
-	query += strings.Join(setClauses, ", ")
-	query += fmt.Sprintf(" WHERE group_name = $1 AND song_name = $2")
-	log.Printf("INFO: query for the database=%s\n", query)
-	log.Printf("INFO: query params for the database=%s\n", params)
-	_, err := p.Exec(context.Background(), query, params...)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-var connPool *pgxpool.Pool
 
 func main() {
 	var err error
@@ -225,7 +98,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file: %s", err)
 	}
-	connPool, err = pgxpool.NewWithConfig(context.Background(), Config())
+	connPool, err := pgxpool.NewWithConfig(context.Background(), Config())
 	if err != nil {
 		log.Fatal("Error while creating connection to the database!!", err)
 	}
@@ -238,17 +111,23 @@ func main() {
 	if err != nil {
 		log.Fatal("Could not ping database", err)
 	}
-	err = CreateTableQuery(connPool)
+	database := NewPGXDatabase(connPool)
+	client := HTTPClient(&http.Client{})
+	handler := &Handler{
+		Database: database,
+		Client:   client,
+	}
+	err = database.CreateTableQuery(context.Background())
 	if err != nil {
 		log.Fatal("Error while creating table in the database", err)
 	}
 	log.Printf("INFO: created table\n")
 	defer connPool.Close()
-	http.HandleFunc("/addsong", addsong)
-	http.HandleFunc("/deletesong", deletesong)
-	http.HandleFunc("/editsong", editsong)
-	http.HandleFunc("/getdata", getdata)
-	http.HandleFunc("/getsongtext", getsongtext)
+	http.HandleFunc("/addsong", handler.addsong)
+	http.HandleFunc("/deletesong", handler.deletesong)
+	http.HandleFunc("/editsong", handler.editsong)
+	http.HandleFunc("/getdata", handler.getdata)
+	http.HandleFunc("/getsongtext", handler.getsongtext)
 	// http.HandleFunc("/info", info)
 	log.Fatal(http.ListenAndServe(os.Getenv("SERVER_IP")+":"+os.Getenv("PORT"), nil))
 }
@@ -264,7 +143,7 @@ func main() {
 // @Failure 400 {object} string "Bad Request"
 // @Failure 500 {object} string "Internal Server Error"
 // @Router /addsong [post]
-func addsong(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) addsong(w http.ResponseWriter, r *http.Request) {
 	log.Println("INFO: Received request to add song")
 	var respdata AddDeleteRequestData
 	body, err := io.ReadAll(r.Body)
@@ -280,7 +159,6 @@ func addsong(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("INFO: Request data: group=%s, song=%s\n", respdata.Group, respdata.Song)
-	client := &http.Client{}
 	encodedGroup := url.QueryEscape(respdata.Group)
 	encodedSong := url.QueryEscape(respdata.Song)
 	urlStr := fmt.Sprintf("%s/info?group=%s&song=%s",
@@ -292,7 +170,7 @@ func addsong(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	resp, err := client.Do(req)
+	resp, err := h.Client.Do(req)
 	if err != nil {
 		log.Printf("ERROR: Failed to get additional song data: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -312,7 +190,7 @@ func addsong(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = InsertQuery(connPool, respdata.Group, respdata.Song, reqdata.Date, reqdata.Text, reqdata.Link)
+	err = h.Database.InsertQuery(context.Background(), respdata.Group, respdata.Song, reqdata.Date, reqdata.Text, reqdata.Link)
 	if err != nil {
 		log.Printf("ERROR: Failed to add song to the database: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -331,7 +209,7 @@ func addsong(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} string "Bad Request"
 // @Failure 500 {object} string "Internal Server Error"
 // @Router /deletesong [post]
-func deletesong(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) deletesong(w http.ResponseWriter, r *http.Request) {
 	log.Println("INFO: Received request to delete song")
 	var respdata AddDeleteRequestData
 	body, err := io.ReadAll(r.Body)
@@ -347,7 +225,7 @@ func deletesong(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("INFO: Request data: group=%s, song=%s\n", respdata.Group, respdata.Song)
-	err = DeleteQuery(connPool, respdata.Group, respdata.Song)
+	err = h.Database.DeleteQuery(context.Background(), respdata.Group, respdata.Song)
 	if err != nil {
 		log.Printf("ERROR: Failed to delete song from the database: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -366,7 +244,7 @@ func deletesong(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} string "Bad Request"
 // @Failure 500 {object} string "Internal Server Error"
 // @Router /editsong [post]
-func editsong(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) editsong(w http.ResponseWriter, r *http.Request) {
 	log.Println("INFO: Received request to edit song")
 	var respdata EditRequestData
 	body, err := io.ReadAll(r.Body)
@@ -380,7 +258,7 @@ func editsong(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("INFO: Request data: group=%s, song=%s, releaseDate=%s, text=%s, link=%s\n", respdata.Group, respdata.Song, respdata.Date, respdata.Text, respdata.Link)
-	err = EditQuery(connPool, respdata.Group, respdata.Song, respdata.Date, respdata.Text, respdata.Link)
+	err = h.Database.EditQuery(context.Background(), respdata.Group, respdata.Song, respdata.Date, respdata.Text, respdata.Link)
 	if err != nil {
 		log.Printf("ERROR: Failed to edit song in the database: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -404,7 +282,7 @@ func editsong(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} string "Bad Request"
 // @Failure 500 {object} string "Internal Server Error"
 // @Router /getdata [get]
-func getdata(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) getdata(w http.ResponseWriter, r *http.Request) {
 	log.Println("INFO: Received request to get songs")
 	query := r.URL.Query()
 	page, err := strconv.ParseInt(query.Get("page"), 10, 64)
@@ -425,7 +303,7 @@ func getdata(w http.ResponseWriter, r *http.Request) {
 	text := query.Get("text")
 	link := query.Get("link")
 	log.Printf("INFO: Request data: page=%d, items=%d, group=%s, song=%s, releaseDate=%s, text=%s, link=%s\n", page, items, group, song, releaseDate, text, link)
-	result, err := SelectDataQuery(connPool, page, items, group, song, releaseDate, text, link)
+	result, err := h.Database.SelectDataQuery(context.Background(), page, items, group, song, releaseDate, text, link)
 	if err != nil {
 		log.Printf("ERROR: Failed to get data from the database: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -454,7 +332,7 @@ func getdata(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} string "Bad Request"
 // @Failure 500 {object} string "Internal Server Error"
 // @Router /getsongtext [get]
-func getsongtext(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) getsongtext(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	group := query.Get("group")
 	song := query.Get("song")
@@ -465,7 +343,7 @@ func getsongtext(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("INFO: Request data: group=%s, song=%s, couplet=%d\n", group, song, couplet)
-	result, err := SelectCoupletQuery(connPool, group, song, couplet)
+	result, err := h.Database.SelectCoupletQuery(context.Background(), group, song, couplet)
 	if err != nil {
 		log.Printf("ERROR: Failed to get data from the database: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
