@@ -125,10 +125,9 @@ func main() {
 		log.Fatal("Could not ping database", err)
 	}
 	database := NewPGXDatabase(connPool)
-	client := HTTPClient(&http.Client{})
 	handler := &Handler{
 		Database: database,
-		Client:   client,
+		Client:   &http.Client{},
 	}
 	err = database.CreateTableQuery(context.Background())
 	if err != nil {
