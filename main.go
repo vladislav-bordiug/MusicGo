@@ -109,7 +109,7 @@ func main() {
 	var err error
 	err = godotenv.Load(".env")
 	if err != nil {
-		log.Fatal("Error loading .env file: %s", err)
+		log.Fatal("Error loading .env file:", err)
 	}
 	connPool, err := pgxpool.NewWithConfig(context.Background(), Config())
 	if err != nil {
