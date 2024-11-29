@@ -6,6 +6,12 @@
 + ```SERVER_IP``` - IP сервера в ListenAndServe
 + ```PORT``` - порт сервера в ListenAndServe
 
+## Модульные тесты
+Тесты в [main_test.go](main_test.go).
+Покрытие 80%.
+
+![img.png](img.png)
+
 ## Документация
 Документация в [docs.go](docs/docs.go), [swagger.json](docs/swagger.json) и [swagger.yaml](docs/swagger.yaml).
 

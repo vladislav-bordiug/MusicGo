@@ -3,16 +3,23 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"log"
 	"strings"
 )
 
-type PGXDatabase struct {
-	pool *pgxpool.Pool
+type DBPool interface {
+	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, arguments ...interface{}) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, arguments ...interface{}) pgx.Row
 }
 
-func NewPGXDatabase(pool *pgxpool.Pool) *PGXDatabase {
+type PGXDatabase struct {
+	pool DBPool
+}
+
+func NewPGXDatabase(pool DBPool) *PGXDatabase {
 	return &PGXDatabase{pool: pool}
 }
 
