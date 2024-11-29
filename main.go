@@ -140,7 +140,7 @@ func main() {
 	http.HandleFunc("/editsong", handler.editsong)
 	http.HandleFunc("/getdata", handler.getdata)
 	http.HandleFunc("/getsongtext", handler.getsongtext)
-	http.HandleFunc("/info", info)
+	// http.HandleFunc("/info", info)
 	log.Fatal(http.ListenAndServe(os.Getenv("SERVER_IP")+":"+os.Getenv("PORT"), nil))
 }
 
@@ -372,6 +372,7 @@ func (h *Handler) getsongtext(w http.ResponseWriter, r *http.Request) {
 	log.Printf("INFO: Responded\n")
 }
 
+/*
 func info(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	group := query.Get("group")
@@ -392,3 +393,4 @@ func info(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+*/
