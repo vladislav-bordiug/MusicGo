@@ -24,9 +24,7 @@ func NewPGXDatabase(pool DBPool) *PGXDatabase {
 }
 
 func (db *PGXDatabase) CreateTableQuery(ctx context.Context) error {
-	_, err := db.pool.Exec(ctx, "DROP TABLE IF EXISTS groups CASCADE;")
-	_, err = db.pool.Exec(ctx, "DROP TABLE IF EXISTS songs CASCADE;")
-	_, err = db.pool.Exec(ctx, "CREATE TABLE IF NOT EXISTS groups (id SERIAL PRIMARY KEY, group_name TEXT, CONSTRAINT unique_group UNIQUE(group_name));")
+	_, err := db.pool.Exec(ctx, "CREATE TABLE IF NOT EXISTS groups (id SERIAL PRIMARY KEY, group_name TEXT, CONSTRAINT unique_group UNIQUE(group_name));")
 	if err != nil {
 		return err
 	}
