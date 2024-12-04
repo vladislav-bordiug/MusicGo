@@ -34,9 +34,12 @@ func (db *PGXDatabase) CreateTableQuery(ctx context.Context) error {
 
 func (db *PGXDatabase) InsertQuery(ctx context.Context, group_name string, song_name string, releaseDate string, text string, link string) error {
 	var groupID int
-	err := db.pool.QueryRow(ctx, "INSERT INTO groups(group_name) values($1) RETURNING id", group_name).Scan(&groupID)
+	err := db.pool.QueryRow(ctx, "SELECT id FROM groups WHERE group_name = $1", group_name).Scan(&groupID)
 	if err != nil {
-		return err
+		err = db.pool.QueryRow(ctx, "INSERT INTO groups(group_name) values($1) RETURNING id", group_name).Scan(&groupID)
+		if err != nil {
+			return err
+		}
 	}
 	_, err = db.pool.Exec(ctx, "INSERT INTO songs(song_name, releaseDate, text, link, group_id) values($1, TO_TIMESTAMP($2, 'DD.MM.YYYY'), $3, $4, $5)", song_name, releaseDate, text, link, groupID)
 	return err
