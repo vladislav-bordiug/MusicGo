@@ -100,6 +100,9 @@ info:
   description: This is a sample server for music library
   title: Go Music
   version: "1.0"
+servers:
+  - url: "http://localhost:8080"
+    description: "Main API server"
 paths:
   /addsong:
     post:
