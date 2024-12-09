@@ -1,4 +1,4 @@
-package main
+package database
 
 import (
 	"context"
@@ -7,7 +7,17 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"log"
 	"strings"
+	"test/internal/models"
 )
+
+type Database interface {
+	InsertQuery(ctx context.Context, group_name string, song_name string, releaseDate string, text string, link string) error
+	CreateTableQuery(ctx context.Context) error
+	DeleteQuery(ctx context.Context, group_name string, song_name string) error
+	SelectDataQuery(ctx context.Context, page int64, items int64, group string, song string, releaseDate string, text string, link string) (models.AnswerData, error)
+	SelectCoupletQuery(ctx context.Context, group string, song string, couplet int64) (models.AnswerCoupletData, error)
+	EditQuery(ctx context.Context, group_name string, song_name string, releaseDate string, text string, link string) error
+}
 
 type DBPool interface {
 	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
@@ -63,9 +73,9 @@ func (db *PGXDatabase) SelectGroupIdQuery(ctx context.Context, group_name string
 	return groupID, nil
 }
 
-func (db *PGXDatabase) SelectDataQuery(ctx context.Context, page int64, items int64, group string, song string, releaseDate string, text string, link string) (AnswerData, error) {
+func (db *PGXDatabase) SelectDataQuery(ctx context.Context, page int64, items int64, group string, song string, releaseDate string, text string, link string) (models.AnswerData, error) {
 	query := "SELECT g.group_name, s.song_name, TO_CHAR(s.releaseDate, 'DD.MM.YYYY'), s.text, s.link FROM songs s JOIN groups g ON s.group_id = g.id "
-	var answer AnswerData
+	var answer models.AnswerData
 	paramindex := 1
 	setClauses := []string{}
 	params := []interface{}{}
@@ -115,7 +125,7 @@ func (db *PGXDatabase) SelectDataQuery(ctx context.Context, page int64, items in
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var result RowDbData
+		var result models.RowDbData
 		if err := rows.Scan(&result.Group, &result.Song, &result.Date, &result.Text, &result.Link); err != nil {
 			return answer, err
 		}
@@ -124,9 +134,9 @@ func (db *PGXDatabase) SelectDataQuery(ctx context.Context, page int64, items in
 	return answer, nil
 }
 
-func (db *PGXDatabase) SelectCoupletQuery(ctx context.Context, group string, song string, couplet int64) (AnswerCoupletData, error) {
+func (db *PGXDatabase) SelectCoupletQuery(ctx context.Context, group string, song string, couplet int64) (models.AnswerCoupletData, error) {
 	var text string
-	var answer AnswerCoupletData
+	var answer models.AnswerCoupletData
 	var groupID int
 	groupID, err := db.SelectGroupIdQuery(ctx, group)
 	if err != nil {

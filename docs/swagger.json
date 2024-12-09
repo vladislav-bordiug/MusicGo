@@ -1,14 +1,11 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "This is a sample server for music library",
+        "title": "Go Music",
+        "contact": {},
+        "version": "1.0"
     },
-    "servers": [
-        {
-            "url": "http://localhost:8080",
-            "description": "Main API server"
-        }
-    ],
     "paths": {
         "/addsong": {
             "post": {
@@ -30,7 +27,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.AddDeleteRequestData"
+                            "$ref": "#/definitions/models.AddDeleteRequestData"
                         }
                     }
                 ],
@@ -73,7 +70,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.AddDeleteRequestData"
+                            "$ref": "#/definitions/models.AddDeleteRequestData"
                         }
                     }
                 ],
@@ -116,7 +113,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.EditRequestData"
+                            "$ref": "#/definitions/models.EditRequestData"
                         }
                     }
                 ],
@@ -206,7 +203,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.AnswerData"
+                            "$ref": "#/definitions/models.AnswerData"
                         }
                     },
                     "400": {
@@ -264,7 +261,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.AnswerCoupletData"
+                            "$ref": "#/definitions/models.AnswerCoupletData"
                         }
                     },
                     "400": {
@@ -284,7 +281,7 @@
         }
     },
     "definitions": {
-        "main.AddDeleteRequestData": {
+        "models.AddDeleteRequestData": {
             "type": "object",
             "required": [
                 "group",
@@ -301,7 +298,7 @@
                 }
             }
         },
-        "main.AnswerCoupletData": {
+        "models.AnswerCoupletData": {
             "type": "object",
             "required": [
                 "text"
@@ -313,7 +310,7 @@
                 }
             }
         },
-        "main.AnswerData": {
+        "models.AnswerData": {
             "type": "object",
             "required": [
                 "items"
@@ -322,12 +319,12 @@
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/main.RowDbData"
+                        "$ref": "#/definitions/models.RowDbData"
                     }
                 }
             }
         },
-        "main.EditRequestData": {
+        "models.EditRequestData": {
             "type": "object",
             "required": [
                 "group",
@@ -356,7 +353,7 @@
                 }
             }
         },
-        "main.RowDbData": {
+        "models.RowDbData": {
             "type": "object",
             "required": [
                 "group",

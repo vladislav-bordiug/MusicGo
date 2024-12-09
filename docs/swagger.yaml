@@ -1,5 +1,5 @@
 definitions:
-  main.AddDeleteRequestData:
+  models.AddDeleteRequestData:
     properties:
       group:
         example: Muse
@@ -11,7 +11,7 @@ definitions:
     - group
     - song
     type: object
-  main.AnswerCoupletData:
+  models.AnswerCoupletData:
     properties:
       text:
         example: |-
@@ -23,16 +23,16 @@ definitions:
     required:
     - text
     type: object
-  main.AnswerData:
+  models.AnswerData:
     properties:
       items:
         items:
-          $ref: '#/definitions/main.RowDbData'
+          $ref: '#/definitions/models.RowDbData'
         type: array
     required:
     - items
     type: object
-  main.EditRequestData:
+  models.EditRequestData:
     properties:
       group:
         example: Muse
@@ -62,7 +62,7 @@ definitions:
     - group
     - song
     type: object
-  main.RowDbData:
+  models.RowDbData:
     properties:
       group:
         example: Muse
@@ -97,9 +97,9 @@ definitions:
     type: object
 info:
   contact: {}
-servers:
-  - url: "http://localhost:8080"
-    description: "Main API server"
+  description: This is a sample server for music library
+  title: Go Music
+  version: "1.0"
 paths:
   /addsong:
     post:
@@ -112,7 +112,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/main.AddDeleteRequestData'
+          $ref: '#/definitions/models.AddDeleteRequestData'
       produces:
       - application/json
       responses:
@@ -140,7 +140,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/main.AddDeleteRequestData'
+          $ref: '#/definitions/models.AddDeleteRequestData'
       produces:
       - application/json
       responses:
@@ -169,7 +169,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/main.EditRequestData'
+          $ref: '#/definitions/models.EditRequestData'
       produces:
       - application/json
       responses:
@@ -237,7 +237,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.AnswerData'
+            $ref: '#/definitions/models.AnswerData'
         "400":
           description: Bad Request
           schema:
@@ -278,7 +278,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.AnswerCoupletData'
+            $ref: '#/definitions/models.AnswerCoupletData'
         "400":
           description: Bad Request
           schema:

@@ -35,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.AddDeleteRequestData"
+                            "$ref": "#/definitions/models.AddDeleteRequestData"
                         }
                     }
                 ],
@@ -78,7 +78,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.AddDeleteRequestData"
+                            "$ref": "#/definitions/models.AddDeleteRequestData"
                         }
                     }
                 ],
@@ -121,7 +121,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.EditRequestData"
+                            "$ref": "#/definitions/models.EditRequestData"
                         }
                     }
                 ],
@@ -211,7 +211,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.AnswerData"
+                            "$ref": "#/definitions/models.AnswerData"
                         }
                     },
                     "400": {
@@ -269,7 +269,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.AnswerCoupletData"
+                            "$ref": "#/definitions/models.AnswerCoupletData"
                         }
                     },
                     "400": {
@@ -289,7 +289,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "main.AddDeleteRequestData": {
+        "models.AddDeleteRequestData": {
             "type": "object",
             "required": [
                 "group",
@@ -306,7 +306,7 @@ const docTemplate = `{
                 }
             }
         },
-        "main.AnswerCoupletData": {
+        "models.AnswerCoupletData": {
             "type": "object",
             "required": [
                 "text"
@@ -318,7 +318,7 @@ const docTemplate = `{
                 }
             }
         },
-        "main.AnswerData": {
+        "models.AnswerData": {
             "type": "object",
             "required": [
                 "items"
@@ -327,12 +327,12 @@ const docTemplate = `{
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/main.RowDbData"
+                        "$ref": "#/definitions/models.RowDbData"
                     }
                 }
             }
         },
-        "main.EditRequestData": {
+        "models.EditRequestData": {
             "type": "object",
             "required": [
                 "group",
@@ -361,7 +361,7 @@ const docTemplate = `{
                 }
             }
         },
-        "main.RowDbData": {
+        "models.RowDbData": {
             "type": "object",
             "required": [
                 "group",
@@ -398,12 +398,12 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
+	Version:          "1.0",
 	Host:             "",
 	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "Go Music",
+	Description:      "This is a sample server for music library",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",
